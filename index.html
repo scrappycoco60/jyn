@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="The Work">
+<meta name="theme-color" content="#faf8f4">
+<link rel="manifest" href="./manifest.json">
+<title>The Work</title>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button { cursor: pointer; font-family: inherit; }
+textarea, input { font-family: inherit; }
+
+:root {
+  --cream:        #faf8f4;
+  --warm:         #f5f2ed;
+  --stone:        #e8e3db;
+  --mid:          #b8ae9f;
+  --text:         #3a3530;
+  --muted:        #7a7068;
+  --accent:       #8a7355;
+  --accent-light: #c4a882;
+  --sage:         #7a9080;
+  --border:       #ddd8cf;
+  --shadow:       rgba(58,53,48,0.08);
+  --danger:       #c0624a;
+}
+
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body {
+  height: 100%;
+  height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--cream);
+  color: var(--text);
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ════════════════════════════════
+   SCREENS — only one visible at a time
+════════════════════════════════ */
+.screen {
+  display: none;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.screen.active { display: flex; }
+
+/* ════════════════════════════════
+   HOME SCREEN
+════════════════════════════════ */
+.home-header {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+.home-title {
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: normal;
+}
+.home-title em { color: var(--accent); font-style: italic; }
+
+.new-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.new-btn:active { background: #7a6348; }
+
+.home-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.home-list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 80px 32px 40px;
+}
+.empty-icon {
+  font-family: Georgia, serif;
+  font-size: 48px;
+  color: var(--accent-light);
+  margin-bottom: 16px;
+}
+.empty-state h2 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: normal;
+  margin-bottom: 8px;
+}
+.empty-state p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+.empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 24px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 400;
+}
+.empty-cta:active { background: #7a6348; }
+
+/* Worksheet list items */
+.ws-item {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px var(--shadow);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.ws-item:active { box-shadow: none; background: var(--warm); }
+
+.ws-main {
+  flex: 1;
+  padding: 16px 18px;
+  text-align: left;
+  border: none;
+  background: none;
+  display: block;
+  min-width: 0;
+}
+.ws-name {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+  text-align: left;
+}
+.ws-meta {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: left;
+}
+
+.ws-delete {
+  flex-shrink: 0;
+  width: 48px;
+  height: 100%;
+  min-height: 64px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: none;
+  color: var(--mid);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ws-delete:active { background: #fdf0ed; color: var(--danger); }
+
+/* ════════════════════════════════
+   WORKSHEET SCREEN
+════════════════════════════════ */
+.ws-header {
+  flex: 0 0 auto;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 4px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+
+.back-btn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 400;
+  padding: 10px 8px 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.back-btn:active { opacity: 0.6; }
+
+.ws-header-title {
+  flex: 1;
+  font-family: Georgia, serif;
+  font-size: 16px;
+  font-weight: normal;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hdr-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.hdr-btn {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; font-size: 12px; font-weight: 400;
+  color: var(--muted); background: none; white-space: nowrap;
+}
+.hdr-btn:active { background: var(--stone); }
+.hdr-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.hdr-btn.primary:active { background: #7a6348; }
+
+/* Tabs */
+.tabs { flex: 0 0 auto; display: flex; background: var(--warm); border-bottom: 1px solid var(--border); }
+.tab {
+  flex: 1; padding: 10px 8px 12px;
+  border: none; background: none; border-bottom: 2px solid transparent;
+  font-size: 11px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); line-height: 1.3;
+}
+.tab .roman {
+  display: block; font-family: Georgia, serif; font-size: 18px;
+  font-weight: normal; text-transform: none; letter-spacing: 0; margin-bottom: 1px;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--cream); }
+
+/* Scroll + content */
+.scroll-area {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  background: var(--cream);
+}
+main { max-width: 640px; margin: 0 auto; padding: 8px 0 32px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* Bottom bar */
+.bottom-bar {
+  flex: 0 0 auto;
+  display: flex; gap: 10px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid var(--border);
+}
+.bar-btn {
+  flex: 1; padding: 13px 12px; border-radius: 12px;
+  border: 1px solid var(--border); font-size: 14px; font-weight: 400;
+  background: var(--warm); color: var(--text);
+}
+.bar-btn:active { background: var(--stone); }
+.bar-btn.next { background: var(--accent); color: #fff; border-color: var(--accent); }
+.bar-btn.next:active { background: #7a6348; }
+.bar-btn.clear { flex: 0 0 70px; font-size: 13px; color: var(--muted); }
+
+/* ════════════════════════════════
+   CARDS (shared)
+════════════════════════════════ */
+.intro-card {
+  margin: 20px 16px 28px; padding: 24px;
+  background: #fff; border-radius: 16px;
+  border: 1px solid var(--border); box-shadow: 0 2px 16px var(--shadow);
+}
+.intro-card h2 { font-family: Georgia, serif; font-size: 24px; font-weight: normal; line-height: 1.2; margin-bottom: 8px; }
+.intro-card h2 em { color: var(--accent); }
+.intro-card p { font-size: 14px; line-height: 1.7; color: var(--muted); }
+.note { margin-top: 12px; padding: 12px 14px; background: var(--warm); border-left: 3px solid var(--accent-light); border-radius: 8px; font-size: 13px; font-style: italic; line-height: 1.6; color: var(--muted); }
+
+.section-label { margin: 4px 16px 12px; font-size: 11px; font-weight: 500; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+
+.q-card {
+  margin: 0 16px 16px; background: #fff; border-radius: 16px;
+  border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 10px var(--shadow);
+}
+.q-card:focus-within { border-color: var(--accent-light); box-shadow: 0 4px 20px rgba(138,115,85,0.14); }
+.q-head { padding: 18px 20px 0; display: flex; align-items: flex-start; gap: 12px; }
+.q-num { font-family: Georgia, serif; font-size: 32px; font-weight: normal; color: var(--accent-light); line-height: 1; flex-shrink: 0; min-width: 24px; }
+.q-label { font-size: 15px; font-weight: 400; line-height: 1.5; padding-top: 4px; }
+.q-hint { margin: 6px 20px 0 56px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+.q-card textarea {
+  display: block; width: 100%; padding: 14px 20px 18px;
+  border: none; outline: none; background: transparent;
+  font-size: 16px; font-weight: 300; color: var(--text); line-height: 1.7;
+  resize: none; min-height: 96px;
+}
+.q-card textarea::placeholder { color: var(--mid); }
+
+.sentence-card {
+  margin: 0 16px 16px; padding: 20px; background: #fff;
+  border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 2px 10px var(--shadow);
+}
+.sentence-card label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.sentence-card textarea {
+  width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px;
+  font-family: Georgia, serif; font-size: 17px; font-style: italic;
+  color: var(--text); background: var(--warm); resize: none; outline: none; min-height: 64px; line-height: 1.5;
+}
+.sentence-card textarea:focus { border-color: var(--accent-light); }
+
+.ta-card {
+  margin: 0 16px 16px; background: #fff; border-radius: 16px;
+  border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 10px var(--shadow);
+}
+.ta-header { padding: 18px 20px 14px; background: var(--warm); border-bottom: 1px solid var(--border); }
+.ta-header h3 { font-family: Georgia, serif; font-size: 20px; font-weight: normal; margin-bottom: 4px; }
+.ta-header p { font-size: 13px; font-style: italic; color: var(--muted); line-height: 1.6; }
+.ta-block { padding: 14px 20px 16px; border-bottom: 1px solid var(--stone); }
+.ta-block:last-child { border-bottom: none; }
+.ta-type { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+.ta-hint { font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
+.ta-block textarea {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 16px; font-weight: 300; color: var(--text);
+  background: var(--warm); resize: none; outline: none; min-height: 70px; line-height: 1.6;
+}
+.ta-block textarea:focus { border-color: var(--accent-light); }
+.ta-block textarea::placeholder { color: var(--mid); }
+.insights-card { background: linear-gradient(135deg, #f9f6f1, #f2ede4); border-color: var(--accent-light); }
+
+/* ════════════════════════════════
+   MODAL SHEETS
+════════════════════════════════ */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(58,53,48,0.45); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.sheet {
+  background: #fff; width: 100%; max-width: 640px;
+  border-radius: 20px 20px 0 0;
+  padding: 0 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  animation: up 0.28s ease;
+}
+@keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle { width: 36px; height: 4px; background: var(--stone); border-radius: 2px; margin: 14px auto 20px; }
+.sheet-title { font-family: Georgia, serif; font-size: 22px; font-weight: normal; margin-bottom: 4px; }
+.sheet-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+.sheet-btn { display: block; width: 100%; padding: 15px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--warm); font-size: 14px; text-align: left; color: var(--text); margin-bottom: 8px; }
+.sheet-btn:active { background: var(--stone); }
+.sheet-btn strong { display: block; font-weight: 500; margin-bottom: 2px; }
+.sheet-btn span { font-size: 12px; color: var(--muted); }
+.sheet-cancel { display: block; width: 100%; padding: 14px; border: none; background: none; font-size: 14px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+/* New worksheet name input sheet */
+.name-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--warm);
+  outline: none;
+  margin-bottom: 12px;
+}
+.name-input:focus { border-color: var(--accent-light); }
+.name-input::placeholder { color: var(--mid); }
+
+.create-btn {
+  display: block; width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.create-btn:active { background: #7a6348; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom,0px)); left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 9px 18px; border-radius: 20px; font-size: 13px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.25s; z-index: 300; }
+.toast.show { opacity: 1; }
+
+/* ── PRINT ── */
+@media print {
+  .home-screen, .ws-header, .tabs, .bottom-bar { display: none !important; }
+  html, body { height: auto !important; overflow: visible !important; }
+  .screen.active { display: block !important; }
+  .scroll-area { overflow: visible !important; height: auto !important; flex: none !important; }
+  .section { display: block !important; }
+  .q-card, .ta-card, .sentence-card, .intro-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; margin: 0 0 14px; }
+  body.print-minimal .note,
+  body.print-minimal .q-hint,
+  body.print-minimal .ta-hint,
+  body.print-minimal .ta-header p,
+  body.print-minimal .intro-card p { display: none !important; }
+  .print-date { display: block !important; font-size: 12px; color: #888; margin-bottom: 16px; }
+}
+.print-date { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     HOME SCREEN
+════════════════════════════════ -->
+<div class="screen active" id="homeScreen">
+  <div class="home-header">
+    <div class="home-title">The <em>Work</em></div>
+    <button class="new-btn" onclick="openNewSheet()" aria-label="New worksheet">+</button>
+  </div>
+  <div class="home-scroll">
+    <div class="home-list" id="homeList">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     WORKSHEET SCREEN
+════════════════════════════════ -->
+<div class="screen" id="wsScreen">
+
+  <div class="ws-header">
+    <button class="back-btn" onclick="goHome()">
+      ‹ All
+    </button>
+    <div class="ws-header-title" id="wsHeaderTitle"></div>
+    <div class="hdr-btns">
+      <button class="hdr-btn" onclick="openExport()">Export PDF</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab0" onclick="switchTab(0)">
+      <span class="roman">I</span>Judge Your Neighbour
+    </button>
+    <button class="tab" id="tab1" onclick="switchTab(1)">
+      <span class="roman">II</span>The Work
+    </button>
+  </div>
+
+  <div class="scroll-area" id="scrollArea">
+  <main>
+
+    <!-- SECTION 1 -->
+    <div class="section active" id="sec0">
+      <div class="print-date" id="pd1"></div>
+      <div class="intro-card">
+        <h2>About <em id="introName"></em></h2>
+        <div class="note">Write freely and without censorship — let your judgements land on paper. Use short, simple sentences and try to fully experience the feelings as if the situation were happening right now.</div>
+      </div>
+
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">1</div><div class="q-label">Who angers, disappoints, or confuses you, and why?</div></div>
+        <div class="q-hint">e.g. "I am angry at [name] because he doesn't listen to me…"</div>
+        <textarea id="q1" placeholder="I am angry at… because…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">2</div><div class="q-label">How do you want them to change? What do you want them to do?</div></div>
+        <div class="q-hint">e.g. "I want [name] to listen to me, to be kinder…"</div>
+        <textarea id="q2" placeholder="I want them to…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">3</div><div class="q-label">What should or shouldn't they do, be, think, or feel?</div></div>
+        <div class="q-hint">What advice would you give them?</div>
+        <textarea id="q3" placeholder="They should… / They shouldn't…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">4</div><div class="q-label">What do you need from them to be happy?</div></div>
+        <div class="q-hint">What do they need to do for you to be at peace?</div>
+        <textarea id="q4" placeholder="I need them to…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">5</div><div class="q-label">What do you think of them? Make a list.</div></div>
+        <div class="q-hint">Don't hold back. e.g. "He is selfish, arrogant, dismissive…"</div>
+        <textarea id="q5" placeholder="They are…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">6</div><div class="q-label">What don't you ever want to experience with this person again?</div></div>
+        <div class="q-hint">e.g. "I don't ever want to feel ignored again."</div>
+        <textarea id="q6" placeholder="I don't ever want to…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+
+      <div class="section-label">Turn it Around</div>
+      <div class="ta-card">
+        <div class="ta-header">
+          <h3>Turn it Around</h3>
+          <p>For each answer, reverse the subject — replace their name with "I". For Q5, own those qualities. For Q6, declare willingness: "I am willing to experience…"</p>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">Turnarounds (Q1–Q4 &amp; Q6)</div>
+          <div class="ta-hint">Replace their name with "I" and see if the statement holds.</div>
+          <textarea id="ta1" placeholder="Write your turned-around versions here…" oninput="grow(this); autoSave()"></textarea>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">Turnaround for Q5 — own the qualities</div>
+          <div class="ta-hint">"I am selfish, arrogant…" — feel where this is sometimes true.</div>
+          <textarea id="ta2" placeholder="I am…" oninput="grow(this); autoSave()"></textarea>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">Turnaround for Q6 — willing to experience</div>
+          <div class="ta-hint">Change "I don't ever want…" to "I am willing to experience…"</div>
+          <textarea id="ta3" placeholder="I am willing to experience…" oninput="grow(this); autoSave()"></textarea>
+        </div>
+      </div>
+    </div><!-- /sec0 -->
+
+    <!-- SECTION 2 -->
+    <div class="section" id="sec1">
+      <div class="print-date" id="pd2"></div>
+      <div class="intro-card">
+        <h2>The <em>Work</em></h2>
+        <p>Choose one sentence from your worksheet — the one that still feels most painful. Work it through Byron Katie's four questions, then turn it around.</p>
+        <div class="note">Work with the sentence exactly as you wrote it. There are no right or wrong answers.</div>
+      </div>
+
+      <div class="sentence-card">
+        <label>My painful sentence is…</label>
+        <textarea id="ps" placeholder="e.g. My boss ignores my efforts." oninput="grow(this); autoSave()"></textarea>
+      </div>
+
+      <div class="section-label">The Four Questions</div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">Q1</div><div class="q-label">Is it true?</div></div>
+        <div class="q-hint">Answer yes or no.</div>
+        <textarea id="wq1" placeholder="Yes / No…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">Q2</div><div class="q-label">Can you absolutely know it's true?</div></div>
+        <div class="q-hint">Can you know with 100% certainty?</div>
+        <textarea id="wq2" placeholder="Yes / No…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">Q3</div><div class="q-label">How do you react when you believe that thought?</div></div>
+        <div class="q-hint">How do you treat yourself and others? What do you do?</div>
+        <textarea id="wq3" placeholder="When I believe this I feel… I do…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+      <div class="q-card">
+        <div class="q-head"><div class="q-num">Q4</div><div class="q-label">Who would you be without that thought?</div></div>
+        <div class="q-hint">Imagine the same situation — but without the ability to think this thought.</div>
+        <textarea id="wq4" placeholder="Without that thought I would be…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+
+      <div class="section-label">Turn it Around</div>
+      <div class="ta-card">
+        <div class="ta-header">
+          <h3>Turnarounds</h3>
+          <p>Turn the painful sentence around in three ways. For each, find three genuine examples where the turnaround might be as true as your original thought.</p>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">The Opposite</div>
+          <div class="ta-hint">Reverse the statement. e.g. "My boss does not ignore my efforts." Find three examples.</div>
+          <textarea id="wta1" placeholder="The opposite: …" oninput="grow(this); autoSave()"></textarea>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">Turn it to the Self</div>
+          <div class="ta-hint">Replace "my boss" with "I." e.g. "I ignore my own efforts." Three examples.</div>
+          <textarea id="wta2" placeholder="Turning to myself: I…" oninput="grow(this); autoSave()"></textarea>
+        </div>
+        <div class="ta-block">
+          <div class="ta-type">Turn it to the Other</div>
+          <div class="ta-hint">e.g. "My boss ignores his own efforts." Three examples.</div>
+          <textarea id="wta3" placeholder="Turning to them: They…" oninput="grow(this); autoSave()"></textarea>
+        </div>
+      </div>
+
+      <div class="section-label">Reflections</div>
+      <div class="q-card insights-card">
+        <div class="q-head">
+          <div class="q-num" style="color:var(--sage)">✦</div>
+          <div class="q-label">New insights and realisations</div>
+        </div>
+        <div class="q-hint">What did you notice? Which turned-around sentence now feels truest?</div>
+        <textarea id="insights" placeholder="I noticed… / The sentence that now feels truest is…" oninput="grow(this); autoSave()"></textarea>
+      </div>
+    </div><!-- /sec1 -->
+
+  </main>
+  </div><!-- /scroll-area -->
+
+  <div class="bottom-bar">
+    <button class="bar-btn clear" onclick="clearCurrent()">Clear</button>
+    <button class="bar-btn next" id="navBtn" onclick="switchTab(1)">Continue to The Work →</button>
+  </div>
+
+</div><!-- /wsScreen -->
+
+<!-- NEW WORKSHEET SHEET -->
+<div class="overlay" id="newOverlay" onclick="bgClose(event,'newOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">New Worksheet</div>
+    <div class="sheet-sub">Who is this worksheet about?</div>
+    <input class="name-input" id="newName" type="text" placeholder="e.g. My boss, My sister, My mother…" maxlength="60"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();createWorksheet();}">
+    <button class="create-btn" onclick="createWorksheet()">Start Worksheet</button>
+    <button class="sheet-cancel" onclick="closeAll()">Cancel</button>
+  </div>
+</div>
+
+<!-- EXPORT SHEET -->
+<div class="overlay" id="exportOverlay" onclick="bgClose(event,'exportOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Export PDF</div>
+    <div class="sheet-sub">In the Print dialog, choose "Save as PDF" as the destination.</div>
+    <button class="sheet-btn" onclick="doPrint(false)"><strong>Detailed — with guidance</strong><span>Questions, answers, and all guidance text</span></button>
+    <button class="sheet-btn" onclick="doPrint(true)"><strong>Minimal — answers only</strong><span>Clean layout, just questions and your answers</span></button>
+    <button class="sheet-cancel" onclick="closeAll()">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+// DATA MODEL
+// worksheets: array of { id, name, created, fields:{} }
+// stored in localStorage as 'thework_v2'
+// ════════════════════════════════
+
+const FIELDS = ['q1','q2','q3','q4','q5','q6','ta1','ta2','ta3',
+                'ps','wq1','wq2','wq3','wq4','wta1','wta2','wta3','insights'];
+
+let worksheets = [];   // full list
+let currentId  = null; // open worksheet id
+let currentTab = 0;
+
+// ── STORAGE ──
+function loadStore() {
+  try {
+    const raw = localStorage.getItem('thework_v2');
+    if (raw) worksheets = JSON.parse(raw);
+  } catch(e) { worksheets = []; }
+}
+function saveStore() {
+  localStorage.setItem('thework_v2', JSON.stringify(worksheets));
+}
+
+function getWS(id) { return worksheets.find(w => w.id === id); }
+
+// ── AUTO-SAVE (debounced) ──
+let saveTimer = null;
+function autoSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const ws = getWS(currentId);
+    if (!ws) return;
+    FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) ws.fields[id] = el.value;
+    });
+    ws.updated = new Date().toISOString();
+    saveStore();
+  }, 600);
+}
+
+// ── TEXTAREA GROW ──
+function grow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function growAll() {
+  FIELDS.forEach(id => { const el = document.getElementById(id); if (el && el.value) grow(el); });
+}
+
+// ════════════════════════════════
+// HOME SCREEN
+// ════════════════════════════════
+function renderHome() {
+  const list = document.getElementById('homeList');
+  if (worksheets.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✦</div>
+        <h2>No worksheets yet</h2>
+        <p>Each worksheet is about one person or situation. Tap + to begin your first.</p>
+        <button class="empty-cta" onclick="openNewSheet()">+ New Worksheet</button>
+      </div>`;
+    return;
+  }
+  // Sort newest first
+  const sorted = [...worksheets].sort((a,b) => (b.updated||b.created).localeCompare(a.updated||a.created));
+  list.innerHTML = sorted.map(ws => {
+    const date = new Date(ws.updated || ws.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const filled = FIELDS.filter(f => ws.fields[f] && ws.fields[f].trim()).length;
+    const progress = filled === 0 ? 'Not started' : filled === FIELDS.length ? 'Complete' : `${filled} of ${FIELDS.length} fields`;
+    return `
+      <div class="ws-item">
+        <button class="ws-main" onclick="openWorksheet('${ws.id}')">
+          <div class="ws-name">${escHtml(ws.name)}</div>
+          <div class="ws-meta">${date} · ${progress}</div>
+        </button>
+        <button class="ws-delete" onclick="deleteWorksheet('${ws.id}')" aria-label="Delete">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════
+// WORKSHEET CRUD
+// ════════════════════════════════
+function openNewSheet() {
+  document.getElementById('newName').value = '';
+  document.getElementById('newOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('newName').focus(), 320);
+}
+
+function createWorksheet() {
+  const name = document.getElementById('newName').value.trim();
+  if (!name) { document.getElementById('newName').focus(); return; }
+  const ws = {
+    id: 'ws_' + Date.now(),
+    name,
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+    fields: {}
+  };
+  worksheets.push(ws);
+  saveStore();
+  closeAll();
+  openWorksheet(ws.id);
+}
+
+function openWorksheet(id) {
+  const ws = getWS(id);
+  if (!ws) return;
+  currentId = id;
+
+  // Populate fields
+  FIELDS.forEach(fid => {
+    const el = document.getElementById(fid);
+    if (el) { el.value = ws.fields[fid] || ''; el.style.height = ''; }
+  });
+
+  // Set header title and intro
+  document.getElementById('wsHeaderTitle').textContent = ws.name;
+  document.getElementById('introName').textContent = ws.name;
+
+  // Reset to tab 0
+  switchTab(0, true);
+
+  // Switch screens
+  document.getElementById('homeScreen').classList.remove('active');
+  document.getElementById('wsScreen').classList.add('active');
+
+  setTimeout(growAll, 50);
+}
+
+function goHome() {
+  // Save immediately before leaving
+  clearTimeout(saveTimer);
+  const ws = getWS(currentId);
+  if (ws) {
+    FIELDS.forEach(id => { const el = document.getElementById(id); if (el) ws.fields[id] = el.value; });
+    ws.updated = new Date().toISOString();
+    saveStore();
+  }
+  currentId = null;
+  document.getElementById('wsScreen').classList.remove('active');
+  document.getElementById('homeScreen').classList.add('active');
+  renderHome();
+}
+
+function deleteWorksheet(id) {
+  const ws = getWS(id);
+  if (!ws) return;
+  if (!confirm(`Delete "${ws.name}"? This cannot be undone.`)) return;
+  worksheets = worksheets.filter(w => w.id !== id);
+  saveStore();
+  renderHome();
+}
+
+function clearCurrent() {
+  if (!confirm('Clear all answers in this worksheet?')) return;
+  FIELDS.forEach(id => { const el = document.getElementById(id); if (el) { el.value = ''; el.style.height = ''; } });
+  autoSave();
+  toast('Cleared');
+}
+
+// ════════════════════════════════
+// TABS
+// ════════════════════════════════
+function switchTab(n, silent) {
+  document.getElementById('sec0').classList.toggle('active', n === 0);
+  document.getElementById('sec1').classList.toggle('active', n === 1);
+  document.getElementById('tab0').classList.toggle('active', n === 0);
+  document.getElementById('tab1').classList.toggle('active', n === 1);
+  currentTab = n;
+  const btn = document.getElementById('navBtn');
+  btn.textContent = n === 0 ? 'Continue to The Work →' : '← Back to Worksheet';
+  btn.onclick = () => switchTab(n === 0 ? 1 : 0);
+  document.getElementById('scrollArea').scrollTop = 0;
+  if (!silent) setTimeout(growAll, 50);
+}
+
+// ════════════════════════════════
+// PRINT
+// ════════════════════════════════
+function openExport() { document.getElementById('exportOverlay').classList.add('open'); }
+
+function doPrint(minimal) {
+  const now = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('pd1').textContent = now;
+  document.getElementById('pd2').textContent = now;
+  document.body.classList.toggle('print-minimal', minimal);
+  closeAll();
+  setTimeout(() => { window.print(); document.body.classList.remove('print-minimal'); }, 300);
+}
+
+// ════════════════════════════════
+// MODALS / OVERLAY
+// ════════════════════════════════
+function closeAll() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('open')); }
+function bgClose(e, id) { if (e.target === document.getElementById(id)) closeAll(); }
+
+// ── TOAST ──
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadStore();
+  renderHome();
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log('SW registered'))
+    .catch(e => console.warn('SW:', e));
+}
+</script>
+</body>
+</html>
