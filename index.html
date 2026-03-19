@@ -419,7 +419,7 @@ main { max-width: 640px; margin: 0 auto; padding: 8px 0 32px; }
 @media print {
   .home-screen, .ws-header, .tabs, .bottom-bar { display: none !important; }
   html, body { height: auto !important; overflow: visible !important; }
-  .screen.active { display: block !important; }
+  .screen.active { display: block !important; overflow: visible !important; min-height: unset !important; }
   .scroll-area { overflow: visible !important; height: auto !important; flex: none !important; }
   .section { display: block !important; }
   .q-card, .ta-card, .sentence-card, .intro-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; margin: 0 0 14px; }
@@ -844,7 +844,39 @@ function doPrint(minimal) {
   document.getElementById('pd2').textContent = now;
   document.body.classList.toggle('print-minimal', minimal);
   closeAll();
-  setTimeout(() => { window.print(); document.body.classList.remove('print-minimal'); }, 300);
+  setTimeout(() => {
+    // Force layout open for iOS Chrome (media print rules are unreliable on iOS)
+    const activeScreen = document.querySelector('.screen.active');
+    const scrollArea   = document.getElementById('scrollArea');
+    [document.documentElement, document.body].forEach(el => {
+      el.style.height   = 'auto';
+      el.style.overflow = 'visible';
+    });
+    if (activeScreen) {
+      activeScreen.style.overflow  = 'visible';
+      activeScreen.style.minHeight = 'auto';
+      activeScreen.style.display   = 'block';
+    }
+    if (scrollArea) {
+      scrollArea.style.overflow = 'visible';
+      scrollArea.style.height   = 'auto';
+      scrollArea.style.flex     = 'none';
+    }
+    const cleanup = () => {
+      [document.documentElement, document.body].forEach(el => {
+        el.style.height = el.style.overflow = '';
+      });
+      if (activeScreen) {
+        activeScreen.style.overflow = activeScreen.style.minHeight = activeScreen.style.display = '';
+      }
+      if (scrollArea) {
+        scrollArea.style.overflow = scrollArea.style.height = scrollArea.style.flex = '';
+      }
+      document.body.classList.remove('print-minimal');
+    };
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+  }, 300);
 }
 
 // ════════════════════════════════
